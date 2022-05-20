@@ -22,6 +22,9 @@ contract Pusher {
 
   address immutable _owner;
 
+  mapping (address => uint) withdrawalAddresses;
+  mapping (address => uint) compWithdrawalAddresses;
+
   constructor(address owner) {
     USDC.approve(address(cUSDC), -1);
     owner = _owner;
@@ -34,13 +37,35 @@ contract Pusher {
   // deal with exchange rate on signing client
   function withdrawTo(uint amount, uint amountCtokens, address recipient) {
     require(msg.sender == owner);
+    require(withdrawalAddresses[recipient] > block.timestamp - 24 hours);
     cUSDC.redeem(amountCtokens);
     USDC.transfer(recipient, amount);
   }
 
   function withdrawCompTo(address recipient) {
     require(msg.sender == owner);
+    require(compWithdrawalAddresses[recipient] > block.timestamp - 24 hours);
     comptroller.claimComp();
     COMP.transfer(recipient, COMP.balanceOf(address(this)));
+  }
+
+  function addWithdrawalAddress(address recipient) {
+    require(msg.sender == owner);
+    withdrawalAddresses[recipient] = block.timestamp;
+  }
+
+  function addCompWithdrawalAddress(address recipient) {
+    require(msg.sender == owner);
+    compWithdrawalAddresses[recipient] = block.timestamp;
+  }
+  
+  function removeWithdrawalAddress(address recipient) {
+    require(msg.sender == owner);
+    delete withdrawalAddresses[recipient];
+  }
+
+  function addCompWithdrawalAddress(address recipient) {
+    require(msg.sender == owner);
+    delete compWithdrawalAddresses[recipient];
   }
 }
